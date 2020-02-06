@@ -22,6 +22,16 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+let auth = (function(req,res,next) {
+  try {
+    let decoded = jwt.verify(req.body.token, process.env.SECRET);
+    return next();
+  } catch (err) {
+    err = new Error("Error in authorization");
+    return next(err);
+  }
+});
+
 app.post("/register", function(req, res) {
   let name = req.body.name;
   let email = req.body.email;
@@ -85,26 +95,11 @@ app.post("/login", function(req, res) {
   });
 });
 
-app.get("/auth", function(req, res) {
-  let token = req.body.token;
-  let data = auth(token);
-  if (data != null) {
-    console.log("True");
-    res.send(data);
-  } else {
-    console.log("False");
-    res.sendStatus(401);
-  }
+app.get("/auth",auth, function(req, res) {
+  res.send("You can view super secret content")
 });
 
-let auth = function(token) {
-  try {
-    let decoded = jwt.verify(token, process.env.SECRET);
-    return decoded;
-  } catch (err) {
-    return null;
-  }
-};
+
 
 app.listen(8080, function(err) {
   if (err) console.log(err);
