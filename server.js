@@ -22,19 +22,23 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-let auth = (function(req,res,next) {
+let auth = function(req, res, next) {
   try {
     let decoded = jwt.verify(req.body.token, process.env.SECRET);
+    if (decoded["role"]!="admin"){
+      console.log(decoded);
+      return res.sendStatus(401);
+    }
     return next();
   } catch (err) {
-    err = new Error("Error in authorization");
-    return next(err);
+    return res.sendStatus(401);
   }
-});
+};
 
 app.post("/register", function(req, res) {
   let name = req.body.name;
   let email = req.body.email;
+  let role = req.body.role;
   let password = req.body.password;
   let collection = client.db("mozoBase").collection("users");
   bcrypt.hash(password, 14, function(err, hash) {
@@ -54,12 +58,13 @@ app.post("/register", function(req, res) {
             {
               name: name,
               email: email,
-              password: hash
+              password: hash,
+              role: role
             },
             function(err, result) {
               if (err) {
                 console.log(err);
-                res.sendStatus(500);
+                return res.sendStatus(500);
               }
               res.send("Success");
             }
@@ -84,7 +89,7 @@ app.post("/login", function(req, res) {
           console.log("Error in authenticiation");
           res.sendStatus(401);
         } else {
-          let token = jwt.sign({ user: result["name"] }, process.env.SECRET, {
+          let token = jwt.sign({ user: result["name"], role:result["role"] }, process.env.SECRET, {
             expiresIn: "1h",
             issuer: "srmkzilla.net"
           });
@@ -95,11 +100,9 @@ app.post("/login", function(req, res) {
   });
 });
 
-app.get("/auth",auth, function(req, res) {
-  res.send("You can view super secret content")
+app.get("/auth", auth, function(req, res) {
+  res.send("You can view super secret content");
 });
-
-
 
 app.listen(8080, function(err) {
   if (err) console.log(err);
