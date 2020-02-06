@@ -36,8 +36,7 @@ app.post("/register", function(req, res) {
         if (err) {
           console.log(err);
           res.sendStatus(500);
-        }
-        else if (result.length != 0) {
+        } else if (result.length != 0) {
           console.log("Exisitng Email");
           res.sendStatus(409);
         } else {
@@ -85,6 +84,27 @@ app.post("/login", function(req, res) {
     }
   });
 });
+
+app.get("/auth", function(req, res) {
+  let token = req.body.token;
+  let data = auth(token);
+  if (data != null) {
+    console.log("True");
+    res.send(data);
+  } else {
+    console.log("False");
+    res.sendStatus(401);
+  }
+});
+
+let auth = function(token) {
+  try {
+    let decoded = jwt.verify(token, process.env.SECRET);
+    return decoded;
+  } catch (err) {
+    return null;
+  }
+};
 
 app.listen(8080, function(err) {
   if (err) console.log(err);
